@@ -287,3 +287,13 @@ To install OpenShift LightSpeed from the UI, follow these steps:
 4. Select Install
 5. Select the latest version
 6. Click Install
+
+
+## Installing OpenShift LightSpeed from CLI
+
+oc apply -f lightspeed/operator
+oc create -f lightspeed/ols-secret.yaml
+oc create -f lightspeed/olsconfig.yaml
+
+Validate that it is running:
+oc get po -n openshift-lightspeed
