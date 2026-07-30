@@ -324,7 +324,9 @@ oc apply -f openshift-ai/model-hosting/route.yaml
 Confirm the route:
 
 ```sh
-oc get route -n llm-serving
+$ oc get route -n llm-serving
+NAME                      HOST/PORT                                                   PATH   SERVICES                  PORT   TERMINATION   WILDCARD
+granite-41-3b-predictor   granite-41-3b-predictor-llm-serving.apps.sno.example.com    granite-41-3b-predictor          http   edge          None
 ```
 
 Note the `HOST/PORT` value — you will use it as the LightSpeed provider URL.
