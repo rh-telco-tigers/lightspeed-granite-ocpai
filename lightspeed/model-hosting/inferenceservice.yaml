@@ -1,0 +1,189 @@
+apiVersion: v1
+items:
+- apiVersion: serving.kserve.io/v1beta1
+  kind: InferenceService
+  metadata:
+    annotations:
+      modelFormat: vLLM
+      opendatahub.io/hardware-profile-name: nvidia-gpu
+      opendatahub.io/hardware-profile-namespace: redhat-ods-applications
+      opendatahub.io/model-type: generative
+      openshift.io/display-name: granite4.1-3b
+      security.opendatahub.io/enable-auth: "false"
+      serving.kserve.io/deploymentMode: Standard
+    creationTimestamp: "2026-07-16T18:11:39Z"
+    finalizers:
+    - inferenceservice.finalizers
+    - odh.inferenceservice.finalizers
+    generation: 1
+    labels:
+      opendatahub.io/dashboard: "true"
+    name: granite41-3b
+    namespace: llm-serving
+    resourceVersion: "2293872"
+    uid: 57f14fae-744e-4502-8f56-0a7799e64082
+  spec:
+    predictor:
+      automountServiceAccountToken: false
+      deploymentStrategy:
+        type: Recreate
+      imagePullSecrets:
+      - name: granite41-3b
+      maxReplicas: 1
+      minReplicas: 1
+      model:
+        args:
+        - --max-model-len=35000
+        - --max-num-seqs=4
+        - --gpu-memory-utilization=0.95
+        - --enforce-eager
+        - --enable-auto-tool-choice
+        - --tool-call-parser=granite4
+        modelFormat:
+          name: vLLM
+        name: ""
+        resources:
+          limits:
+            cpu: "4"
+            memory: 16Gi
+            nvidia.com/gpu: "1"
+          requests:
+            cpu: "4"
+            memory: 16Gi
+            nvidia.com/gpu: "1"
+        runtime: granite41
+        storageUri: oci://registry.xphyrlab.net/markd/granite4.1-3b-llm:v1
+      timeout: 30
+  status:
+    address:
+      url: http://granite41-3b-predictor.llm-serving.svc.cluster.local:8080
+    components:
+      predictor:
+        url: http://granite41-3b-predictor-llm-serving.example.com
+    conditions:
+    - lastTransitionTime: "2026-07-16T18:11:39Z"
+      status: "True"
+      type: IngressReady
+    - lastTransitionTime: "2026-07-29T14:57:10Z"
+      message: ReplicaSet "granite41-3b-predictor-7668b9cdb8" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: PredictorReady
+    - lastTransitionTime: "2026-07-29T14:57:10Z"
+      status: "True"
+      type: Ready
+    - lastTransitionTime: "2026-07-16T18:11:39Z"
+      severity: Info
+      status: "False"
+      type: Stopped
+    deploymentMode: Standard
+    modelStatus:
+      copies:
+        failedCopies: 0
+        totalCopies: 1
+      states:
+        activeModelState: Loaded
+        targetModelState: Loaded
+      transitionStatus: UpToDate
+    observedGeneration: 1
+    servingRuntimeName: granite41
+    url: http://granite41-3b-predictor.llm-serving.svc.cluster.local
+- apiVersion: serving.kserve.io/v1beta1
+  kind: InferenceService
+  metadata:
+    annotations:
+      modelFormat: vLLM
+      opendatahub.io/connections: ui-created
+      opendatahub.io/hardware-profile-name: nvidia-gpu
+      opendatahub.io/hardware-profile-namespace: redhat-ods-applications
+      opendatahub.io/hardware-profile-resource-version: "1602172"
+      opendatahub.io/model-type: generative
+      openshift.io/description: ""
+      openshift.io/display-name: granite41-3b-ui
+      security.opendatahub.io/enable-auth: "true"
+      serving.kserve.io/deploymentMode: Standard
+    creationTimestamp: "2026-07-29T19:11:53Z"
+    finalizers:
+    - inferenceservice.finalizers
+    - odh.inferenceservice.finalizers
+    generation: 1
+    labels:
+      networking.kserve.io/visibility: exposed
+      opendatahub.io/dashboard: "true"
+    name: granite41-3b-ui
+    namespace: llm-serving
+    resourceVersion: "2434735"
+    uid: 73410f99-9505-4e77-b1bc-075606516a29
+  spec:
+    predictor:
+      automountServiceAccountToken: false
+      deploymentStrategy:
+        type: RollingUpdate
+      imagePullSecrets:
+      - name: ui-created
+      maxReplicas: 1
+      minReplicas: 1
+      model:
+        args:
+        - --max-model-len=35000
+        - --max-num-seqs=4
+        - --gpu-memory-utilization=0.95
+        - --enforce-eager
+        - --enable-auto-tool-choice
+        - --tool-call-parser=granite4
+        - ""
+        modelFormat:
+          name: vLLM
+        name: ""
+        resources:
+          limits:
+            cpu: "4"
+            memory: 16Gi
+            nvidia.com/gpu: "1"
+          requests:
+            cpu: "4"
+            memory: 16Gi
+            nvidia.com/gpu: "1"
+        runtime: granite41-3b-ui
+        storageUri: oci://registry.xphyrlab.net/markd/granite4.1-3b-llm:v1
+      timeout: 30
+  status:
+    address:
+      url: https://granite41-3b-ui-predictor.llm-serving.svc.cluster.local:8443
+    components:
+      predictor: {}
+    conditions:
+    - lastTransitionTime: "2026-07-29T19:11:54Z"
+      status: "True"
+      type: IngressReady
+    - lastTransitionTime: "2026-07-29T19:11:54Z"
+      message: Deployment does not have minimum availability.
+      reason: MinimumReplicasUnavailable
+      status: "False"
+      type: PredictorReady
+    - lastTransitionTime: "2026-07-29T19:11:54Z"
+      message: Deployment does not have minimum availability.
+      reason: MinimumReplicasUnavailable
+      status: "False"
+      type: Ready
+    - lastTransitionTime: "2026-07-29T19:11:53Z"
+      severity: Info
+      status: "False"
+      type: Stopped
+    deploymentMode: Standard
+    modelStatus:
+      copies:
+        failedCopies: 0
+      lastFailureInfo:
+        exitCode: 1
+        reason: ModelLoadFailed
+      states:
+        activeModelState: ""
+        targetModelState: FailedToLoad
+      transitionStatus: BlockedByFailedLoad
+    observedGeneration: 1
+    servingRuntimeName: granite41-3b-ui
+    url: https://granite41-3b-ui-llm-serving.apps.sno.xphyrlab.net
+kind: List
+metadata:
+  resourceVersion: ""
