@@ -232,23 +232,6 @@ oc apply -f openshift-ai/model-hosting/inferenceservice.yaml
 oc get pods -n llm-serving -w
 ```
 
-
-Update the example file in `openshift-ai/model-hosting/inferenceservice-ocimodel.yaml` to match your configuration.
-
-Now create the `llm-serving` namespace that we will use for hosting the model
-
-`oc new-project llm-serving`
-
-> NOTE: you can also use the `openshift-ai/model-hosting/00_namespace.yml` file to create the namespace
-
-Finally create the model hosting service:
-
-`oc create -f openshift-ai/model-hosting/inferenceservice-ocimodel.yaml`
-
-oc -n llm-serving get pods -w
-# First start is slow: KServe pulls the OCI image (~6.4 GB), copies
-# model files, vLLM loads the model. Expect 5-10 min.
-
 ### Testing the model
 
 Before configuring LightSpeed on an OCP cluster, lets test to ensure that the model is running properly
