@@ -1,0 +1,49 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: granite-41-3b
+  namespace: llm-serving
+  annotations:
+    modelFormat: vLLM
+    serving.kserve.io/stop: 'false'
+    security.opendatahub.io/enable-auth: 'true'
+    openshift.io/display-name: granite-41-3b
+    serving.kserve.io/deploymentMode: Standard
+    opendatahub.io/hardware-profile-namespace: redhat-ods-applications
+    opendatahub.io/hardware-profile-name: profile1
+    opendatahub.io/model-type: generative
+spec:
+  predictor:
+    automountServiceAccountToken: false
+    deploymentStrategy:
+      type: RollingUpdate
+    maxReplicas: 1
+    minReplicas: 1
+    model:
+      args:
+        - '--max-model-len=15000'
+        - '--max-num-seqs=4'
+        - '--gpu-memory-utilization=0.95'
+        - '--enforce-eager'
+        - '--enable-auto-tool-choice'
+        - '--tool-call-parser=granite4'
+      modelFormat:
+        name: vLLM   # or match your ServingRuntime
+      runtime: vllm-cuda-runtime  # name of your ServingRuntime
+      storageUri: hf://ibm-granite/granite-4.1-3b
+      resources:
+        requests:
+          cpu: "4"
+          memory: 32Gi
+          nvidia.com/gpu: "1"
+        limits:
+          cpu: "4"
+          memory: 48Gi
+          nvidia.com/gpu: "1"
+      env:
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secret
+              key: HF_TOKEN
+    
