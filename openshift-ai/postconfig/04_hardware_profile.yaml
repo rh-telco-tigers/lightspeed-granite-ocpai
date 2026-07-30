@@ -18,7 +18,7 @@ spec:
       minCount: 16Gi
       resourceType: Memory
     - defaultCount: 1
-      displayName: nvidia-a2
+      displayName: nvidia
       identifier: nvidia.com/gpu
       maxCount: 2
       minCount: 1

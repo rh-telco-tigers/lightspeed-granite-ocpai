@@ -30,7 +30,38 @@ You can also install OpenShift AI from the command line. Follow the steps listed
 2. run the following command `oc apply -f openshift-ai\operator`
 > Note: if you see any failures re-apply the missed files
 
-#### 
+#### Creating hardware profile for your GPU
+
+Before moving to the next step and hosting the Granite model, we need to create a `HardwareProfile` which defines what GPU hardware you have available. The following steps assume you have already installed/configured your GPU operator. For this document we will assume NVIDIA hardware.
+
+Start by getting your GPU hardware available in your cluster. The easiest way to do this is to look at the Allocatable Resources for each node in your cluster. Look for the identifier for your GPU hardware. For example:
+
+```
+oc describe node ec-eb-b8-97-af-ac
+Name:               ec-eb-b8-97-af-ac
+Roles:              control-plane,master,worker
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+...
+Capacity:
+  cpu:                56
+  ephemeral-storage:  585217732Ki
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             263974856Ki
+  nvidia.com/gpu:     4
+  pods:               250
+```
+
+>NOTE: In the above output, `nvidia.com/gpu: 4` shows that there are 4 NVIDIA GPUs available
+
+Using the file `openshift-ai/postconfig/04_hardware_profile.yaml` update the displayname and identifier to match what you have in your cluster.
+
+Apply the hardwareprofile using
+
+`oc apply -f openshift-ai/postconfig/04_hardware_profile.yaml`
+
+> NOTE If you change the name of the hardware profile, keep track of this, as we will need it later on.
 
 
 ## Building the Granite41 model container
@@ -88,6 +119,44 @@ Now that we have installed OpenShift AI and built our Granite41 model container 
 
 ### Hosting the Model via the command line
 
+Update the example file in `openshift-ai/model-hosting/inferenceservice-ocimodel.yaml` to match your configuration.
+
+Now create the `llm-serving` namespace that we will use for hosting the model
+
+`oc new-project llm-serving`
+
+> NOTE: you can also use the `openshift-ai/model-hosting/00_namespace.yml` file to create the namespace
+
+Finally create the model hosting service:
+
+`oc create -f openshift-ai/model-hosting/inferenceservice-ocimodel.yaml`
+
+oc -n llm-serving get pods -w
+# First start is slow: KServe pulls the OCI image (~6.4 GB), copies
+# model files, vLLM loads the model. Expect 5-10 min.
+
+### Testing the model
+
+Before configuring LightSpeed on an OCP cluster, lets test to ensure that the model is running properly
+
+```sh
+# SMOKE TEST the model directly before touching OLS:
+POD=$(oc get pod -n llm-serving -o jsonpath='{.items[0].metadata.name}')
+oc exec -n llm-serving "$POD" -c kserve-container -- \
+  curl -s http://localhost:8080/v1/models | python3 -m json.tool
+# Should return a model with id "granite-41-3b"
+
+oc exec -n llm-serving "$POD" -c kserve-container -- \
+  curl -s -X POST http://localhost:8080/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "granite-41-3b",
+    "messages": [{"role": "user", "content": "What is a Kubernetes Deployment in one sentence?"}],
+    "max_tokens": 100
+  }' | python3 -m json.tool
+# Should return a coherent answer. If this fails, OLS will too —
+# debug here first.
+```
 
 ## Installing OpenShift LightSpeed
 
