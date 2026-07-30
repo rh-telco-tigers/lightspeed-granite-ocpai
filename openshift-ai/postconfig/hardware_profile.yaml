@@ -6,8 +6,8 @@ metadata:
     internal.config.kubernetes.io/previousNames: nvidia-gpu
     internal.config.kubernetes.io/previousNamespaces: opendatahub
     opendatahub.io/dashboard-feature-visibility: '[]'
-    opendatahub.io/description: This profile offers 4 CPUs and 16 GiB of memory. You
-      can customize these resources up to 8 CPUs and 64 GiB of memory. Includes NVIDIA gpu Accelerator
+    opendatahub.io/description: This profile offers 4 CPUs and 16–32 GiB of memory.
+      You can customize these resources up to 8 CPUs and 64 GiB of memory. Includes NVIDIA GPU accelerator.
     opendatahub.io/disabled: "false"
     opendatahub.io/display-name: nvidia-gpu
     opendatahub.io/managed: "false"  

@@ -9,7 +9,7 @@ metadata:
   name: granite-41-3b-predictor
   namespace: llm-serving
 spec:
-  host: granite-41-3b-predictor-llm-serving.apps.sno.xphyrlab.net
+  host: granite-41-3b-predictor-llm-serving.apps.example.com
   port:
     targetPort: http
   tls:

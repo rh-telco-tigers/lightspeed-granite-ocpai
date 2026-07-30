@@ -1,127 +1,146 @@
-# Introduction
+# Hosting Granite 4.1-3B for OpenShift LightSpeed
 
-Self hosting a LLM model for OpenShift Lightspeed is possible. This set of files and readme will walk you through the process of deploying OpenShift AI, hosting a Graphite41 model and making it available to OpenShift LIghtspeed. 
+This tutorial walks you through deploying OpenShift AI, hosting an IBM Granite 4.1-3B model, and connecting OpenShift LightSpeed to that model.
 
 ## Requirements
 
-* OpenShift 4 cluster - tested with OpenShift 4.22.6
-* Hardware GPU - in order to have a useable model , a GPU card with at LEAST 16GB of ram 
-* GPU Operator configured for your platform. This doc will discuss using NVIDIA GPUs, but others will work as well
+* OpenShift 4 cluster (tested with OpenShift 4.22.6)
+* GPU with at least 16 GB of VRAM
+* GPU Operator configured for your platform (this guide uses NVIDIA; other vendors work similarly)
 
-### Installing OpenShift AI
+---
 
-We will be installing OpenShift AI version 3.4. This can be installed via the GUI or from the command line:
+## 1. Install OpenShift AI
 
-### Installing from the OpenShift UI
+Install OpenShift AI 3.4 from the UI or the CLI.
 
-To install OpenShift AI from the UI, follow these steps:
-1. log into OpenShift with cluster administrator privledges
-2. Select "Ecosystem"->"Catalog"
-3. Search for "OpenShift AI"
-4. Select Install
-5. Select the 3.4 version
-6. Click Install
+### From the OpenShift UI
 
-### Installing from the command line
+1. Log into OpenShift with cluster-administrator privileges.
+2. Go to **Ecosystem → Catalog**.
+3. Search for **OpenShift AI**.
+4. Select version **3.4** and click **Install**.
 
-You can also install OpenShift AI from the command line. Follow the steps listed below
+### From the command line
 
-1. log into the cluster with `oc login`
-2. run the following command `oc apply -f openshift-ai/operator`
-> Note: if you see any failures re-apply the missed files
+1. Log into the cluster with `oc login`.
+2. Apply the operator manifests:
 
-#### Creating hardware profile for your GPU
-
-Before moving to the next step and hosting the Granite model, we need to create a `HardwareProfile` which defines what GPU hardware you have available. The following steps assume you have already installed/configured your GPU operator. For this document we will assume NVIDIA hardware.
-
-Start by getting your GPU hardware available in your cluster. The easiest way to do this is to look at the Allocatable Resources for each node in your cluster. Look for the identifier for your GPU hardware. For example:
-
+```sh
+oc apply -f openshift-ai/operator
 ```
-oc describe node ec-eb-b8-97-af-ac
-Name:               ec-eb-b8-97-af-ac
-Roles:              control-plane,master,worker
-Labels:             beta.kubernetes.io/arch=amd64
-                    beta.kubernetes.io/os=linux
-...
+
+> If some resources fail on the first pass (for example, the DataScienceCluster before the operator is ready), re-apply until all succeed.
+
+3. Confirm the DataScienceCluster is ready:
+
+```sh
+oc get datasciencecluster -A
+oc get pods -n redhat-ods-applications
+```
+
+### Create a hardware profile
+
+Before hosting the model, create a `HardwareProfile` that matches your GPU. This assumes the GPU Operator is already installed.
+
+1. Find the GPU resource identifier on a node (look under **Allocatable** / **Capacity**):
+
+```sh
+oc describe node <node-name>
+```
+
+Example output:
+
+```text
 Capacity:
-  cpu:                56
-  ephemeral-storage:  585217732Ki
-  hugepages-1Gi:      0
-  hugepages-2Mi:      0
-  memory:             263974856Ki
+  ...
   nvidia.com/gpu:     4
-  pods:               250
 ```
 
->NOTE: In the above output, `nvidia.com/gpu: 4` shows that there are 4 NVIDIA GPUs available
+> Here, `nvidia.com/gpu` is the identifier and `4` is the count.
 
-Using the file `openshift-ai/postconfig/04_hardware_profile.yaml` update the displayname and identifier to match what you have in your cluster.
+2. Edit `openshift-ai/postconfig/hardware_profile.yaml` so the display name and GPU `identifier` match your cluster.
+3. Apply it:
 
-Apply the hardwareprofile using
+```sh
+oc apply -f openshift-ai/postconfig/hardware_profile.yaml
+```
 
-`oc apply -f openshift-ai/postconfig/04_hardware_profile.yaml`
+> If you rename the hardware profile, note the new name — you will reference it in the InferenceService later.
 
-> NOTE If you change the name of the hardware profile, keep track of this, as we will need it later on.
-## Preparing the Granite41 model (optional)
+---
 
-There are multiple ways to get a copy of the Granite41 model for hosting:
+## 2. Prepare the model (optional)
 
-1. **Deploy directly from Hugging Face** — OpenShift AI pulls the model at deploy time. Skip this section and go to [Hosting our model with OpenShift AI](#hosting-our-model-with-openshift-ai).
-2. **Build a container image** — download the model locally, package it, and push to a registry (steps below).
-3. **Upload to S3** — download the model locally and sync it to an S3-compatible bucket (steps below).
+You can serve Granite 4.1-3B in three ways:
 
-If you choose option 2 or 3, start by installing the Hugging Face CLI. See [Install the Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/main/en/installation#install-the-hugging-face-cli) for details.
+1. **Pull from Hugging Face at deploy time** (recommended when the cluster can reach Hugging Face) — skip this section and go to [Host the model](#3-host-the-model-with-openshift-ai).
+2. **Build a container image** (ModelCar) — download locally, package, and push to a registry.
+3. **Upload to S3** — download locally and sync to an S3-compatible bucket.
 
-Download the model:
+For options 2 and 3, install the [Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/main/en/installation#install-the-hugging-face-cli), then download the model:
 
 ```sh
 hf auth login
-hf download ibm-granite/granite-4.1-3b --local-dir ./granite-41/model --exclude "*.bin" --exclude "*.gguf" --exclude "original/*"
+hf download ibm-granite/granite-4.1-3b \
+  --local-dir ./granite-41/model \
+  --exclude "*.bin" \
+  --exclude "*.gguf" \
+  --exclude "original/*"
 ```
 
-### Building the Container Image
-```
-export IMAGE_REPO=registry.xphyrlab.net/models/granite
+### Build a container image
+
+If you would like to host the model as a container, follow these steps to build the container and then push to your local registry.
+
+```sh
+export IMAGE_REPO=registry.example.com/models/granite
 export TAG=4.1-3b
+
 podman build \
   --platform linux/amd64 \
   -t "${IMAGE_REPO}:${TAG}" \
   -f "./granite-41/Containerfile" \
   "./granite-41"
-```
 
-Push your container file to your local registry. We will need this later:
-
-```sh
 podman push "${IMAGE_REPO}:${TAG}"
 ```
 
-### Uploading to S3 Bucket
+### Upload to S3
 
-It is also possible to use S3 bucket storage to upload the model we just pulled from HuggingFace. You will need a S3 bucket and the aws-cli tool to upload the data:
+If you would like to host the model in an S3 bucket, you need an S3-compatible bucket and the AWS CLI. Follow these steps to upload the model to your S3 storage:
 
-```
-export AWS_ACCESS_KEY_ID=8tMRAZKZ2ro44nwInOgh
-export AWS_SECRET_ACCESS_KEY=2asLPIgbPn8sPDB4T0mOsd4kl9iBy8e6Plr3rXRw
-export ENDPOINT_URL=https://s3.xphyrlab.net:9445
+```sh
+export AWS_ACCESS_KEY_ID=<your-access-key>
+export AWS_SECRET_ACCESS_KEY=<your-secret-key>
+export ENDPOINT_URL=https://s3.example.com:9445
 export MODELS_BUCKET=models
 export MODEL_NAME=granite413b
-aws --endpoint-url=${ENDPOINT_URL} s3 sync ./granite-41/model/ s3://${MODELS_BUCKET}/${MODEL_NAME}/
+
+aws --endpoint-url="${ENDPOINT_URL}" \
+  s3 sync ./granite-41/model/ "s3://${MODELS_BUCKET}/${MODEL_NAME}/"
 ```
 
->Note due to the very large size of these files, you may run into issues with uploading to S3. You can use the following additional commands to tweak the upload process:
-`export AWS_MAX_ATTEMPTS=10`
-`aws configure set default.s3.multipart_chunksize 64MB`
+If you have issues with the S3 uploads, the following additional settings often help:
 
-## Hosting our model with OpenShift AI
+```sh
+export AWS_MAX_ATTEMPTS=10
+aws configure set default.s3.multipart_chunksize 64MB
+```
 
-With OpenShift AI installed, you can host the model either by applying manifests from the CLI or by using the OpenShift AI dashboard UI. Prefer **Option 1 (Hugging Face)** when the cluster can reach Hugging Face. Use Option 2 if you prepared a container image or S3 upload earlier.
+---
 
-Manifests live under `openshift-ai/model-hosting/`.
+## 3. Host the model with OpenShift AI
 
-### Option 1: Deploy directly from Hugging Face
+With OpenShift AI installed, and a the source of our model determined, we can now move onto hosting the model in OpenShift AI.  Three sets of example manifests are available:
 
-This path uses:
+* pull from Huggingface
+* pull from Container Registry
+* pull from S3 bucket
+
+Manifests live under `openshift-ai/model-hosting/`. Prefer **Option A (Hugging Face)** when the cluster can reach Hugging Face. Use **Option B** if you prepared a container image or S3 upload above.
+
+### Option A: Deploy from Hugging Face
 
 | File | Purpose |
 |------|---------|
@@ -130,13 +149,13 @@ This path uses:
 | `servingruntime.yaml` | vLLM NVIDIA GPU ServingRuntime for KServe |
 | `inference_huggingface.yaml` | InferenceService that pulls `hf://ibm-granite/granite-4.1-3b` |
 
-You need a [Hugging Face access token](https://huggingface.co/settings/tokens) with permission to download `ibm-granite/granite-4.1-3b`. The cluster must be able to reach Hugging Face on the network.
+You need a [Hugging Face access token](https://huggingface.co/settings/tokens) with permission to download `ibm-granite/granite-4.1-3b`. The cluster must reach Hugging Face on the network.
 
-#### Update inference instance to use hardware profile
+#### Update the hardware profile annotation
 
-Edit the `servingruntime.yaml` file and update the `opendatahub.io/hardware-profile-name` to match the name of the hardware profile you created earlier.
+Edit `openshift-ai/model-hosting/inference_huggingface.yaml` and set `opendatahub.io/hardware-profile-name` to the hardware profile you created earlier.
 
-#### Via the command line (manifests)
+#### From the command line
 
 1. Log into the cluster with `oc login`.
 2. Create the namespace:
@@ -145,7 +164,7 @@ Edit the `servingruntime.yaml` file and update the `opendatahub.io/hardware-prof
 oc apply -f openshift-ai/model-hosting/namespace.yml
 ```
 
-3. Edit `openshift-ai/model-hosting/hf-secret.yaml` and replace `<your-hf-token>` with your Hugging Face token, then apply it:
+3. Edit `openshift-ai/model-hosting/hf-secret.yaml`, replace `<your-hf-token>` with your token, then apply:
 
 ```sh
 oc apply -f openshift-ai/model-hosting/hf-secret.yaml
@@ -157,95 +176,114 @@ oc apply -f openshift-ai/model-hosting/hf-secret.yaml
 oc apply -f openshift-ai/model-hosting/servingruntime.yaml -n llm-serving
 ```
 
-5. Apply the Hugging Face InferenceService:
+5. Apply the InferenceService:
 
 ```sh
 oc apply -f openshift-ai/model-hosting/inference_huggingface.yaml
 ```
 
-6. Wait for the deployment to become ready:
+6. Wait until the deployment is ready:
 
 ```sh
 oc get inferenceservice granite-41-3b -n llm-serving
 oc get pods -n llm-serving -w
 ```
 
-The InferenceService uses `storageUri: hf://ibm-granite/granite-4.1-3b` and injects `HF_TOKEN` from the `hf-secret` secret so vLLM can authenticate to Hugging Face when downloading the model.
+The InferenceService uses `storageUri: hf://ibm-granite/granite-4.1-3b` and injects `HF_TOKEN` from `hf-secret` so vLLM can authenticate to Hugging Face.
 
-#### Via the OpenShift AI UI
+#### From the OpenShift AI UI
 
-1. Log into the OpenShift AI dashboard with cluster administrator (or project-admin) privileges.
-2. Create a data science project named `llm-serving` (or select it if it already exists). This matches the namespace used by the manifests.
-3. Create a secret in OpenShift for Hugging Face authentication (either in the OpenShift console under **Workloads → Secrets** in `llm-serving`, or via `oc`):
+1. Log into the OpenShift AI dashboard with cluster-administrator (or project-admin) privileges.
+2. Create a data science project named `llm-serving` (or select it if it exists).
+3. Create a secret in `llm-serving` (OpenShift console **Workloads → Secrets**, or `oc`):
    - Name: `hf-secret`
    - Key: `HF_TOKEN`
    - Value: your Hugging Face access token
-4. Ensure a vLLM NVIDIA GPU ServingRuntime is available in the project. If it is not listed yet, apply `servingruntime.yaml` from the CLI (Option 1 command-line step 4), or import that YAML from the OpenShift console (**+ → Import YAML**).
-5. In your project, open the **Models** tab and click **Deploy model**.
-6. Fill in the deployment form:
-   - **Model deployment name**: e.g. `granite-41-3b`
+4. Ensure a vLLM NVIDIA GPU ServingRuntime is available. If not, apply `servingruntime.yaml` from the CLI or import it (**+ → Import YAML**).
+5. Open the **Models** tab and click **Deploy model**.
+6. Fill in the form:
+   - **Model deployment name**: `granite-41-3b`
    - **Model type**: `Generative AI`
    - **Serving runtime**: `vLLM NVIDIA GPU ServingRuntime for KServe` (or `vllm-cuda-runtime`)
-   - **Hardware profile**: match your GPU hardware profile (the sample manifest requests 1 GPU, 4 CPU, 32Gi–48Gi memory)
-   - **Model location**: choose a **URI** connection type and set the URI to:
+   - **Hardware profile**: match the profile you created (sample requests 1 GPU, 4 CPU, 32Gi–48Gi memory)
+   - **Model location**: URI connection with:
 
-      ```text
-      hf://ibm-granite/granite-4.1-3b
-      ```
+     ```text
+     hf://ibm-granite/granite-4.1-3b
+     ```
+
 7. Select **Make model deployment available through an external route**.
-8. Enable token authentication by selecting **Require token authentication**.
-9. Under configuration parameters, add an environment variable so the runtime can authenticate to Hugging Face:
+8. Enable **Require token authentication**.
+9. Add an environment variable for Hugging Face auth:
    - Name: `HF_TOKEN`
    - Value from: secret `hf-secret`, key `HF_TOKEN`
 10. Add custom runtime arguments, for example:
-   - `--max-model-len=15000`
-   - `--max-num-seqs=4`
-   - `--gpu-memory-utilization=0.95`
-   - `--enforce-eager`
-   - `--enable-auto-tool-choice`
-   - `--tool-call-parser=granite4`
-11. Click **Deploy** and wait until the model status shows as ready. The first pull from Hugging Face can take several minutes.
+    - `--max-model-len=15000`
+    - `--max-num-seqs=4`
+    - `--gpu-memory-utilization=0.95`
+    - `--enforce-eager`
+    - `--enable-auto-tool-choice`
+    - `--tool-call-parser=granite4`
+11. Click **Deploy** and wait until the model is ready. The first pull from Hugging Face can take several minutes.
 
-### Option 2: Deploy from a container image or S3
+### Option B: Deploy from a container image or S3
 
-Use this path only if you built a ModelCar/container image or uploaded the model to S3 in the preparation steps above (when Hugging Face direct deploy is not suitable). Adjust `openshift-ai/model-hosting/inferenceservice.yaml` (storage URI / connection details, image pull secrets, and resources) to match your registry or S3 connection before applying.
+Use this path only if you built a ModelCar image or uploaded the model to S3.
 
-#### Hosting the Model via the UI
+| File | Purpose |
+|------|---------|
+| `inference_ocimodel.yaml` | InferenceService using an OCI/ModelCar image |
+| `inference_s3.yaml` | InferenceService using S3 storage |
+| `s3-secret.yaml` | S3 credentials (required for S3 path) |
+| `s3registry-sa.yaml` | ServiceAccount that mounts the S3 secret |
 
-1. In the OpenShift AI dashboard, open (or create) the `llm-serving` project.
+#### From the OpenShift AI UI
+
+1. Open (or create) the `llm-serving` project.
 2. Open the **Models** tab and click **Deploy model**.
-3. Select the vLLM NVIDIA GPU ServingRuntime and configure replicas, server size, and accelerator for your GPU.
-4. For the model location:
-   - **Container / OCI**: create a URI connection and set the URI to your image (for example `oci://registry.example.com/models/granite:4.1-3b`).
-   - **S3**: select or create an S3 connection pointing at your bucket, and set the path to the model prefix (for example `granite413b`).
-5. Configure optional serving arguments and authentication as needed, then click **Deploy**.
+3. Select the vLLM NVIDIA GPU ServingRuntime and configure replicas, size, and accelerator.
+4. Set the model location:
+   - **Container / OCI**: URI such as `oci://registry.example.com/models/granite:4.1-3b`
+   - **S3**: connection to your bucket and path prefix (for example `granite413b`)
+5. Configure serving arguments and authentication as needed, then click **Deploy**.
 
-#### Hosting the Model via the command line
+#### From the command line
 
-1. Ensure the `llm-serving` namespace and ServingRuntime exist (same as Option 1 steps 2 and 4).
-2. Update `openshift-ai/model-hosting/inferenceservice.yaml` for your storage location and credentials.
-3. Apply the InferenceService:
+1. Ensure the `llm-serving` namespace and ServingRuntime exist (same as Option A steps 2 and 4).
+2. For S3: edit `s3-secret.yaml` with your credentials, then apply:
 
 ```sh
-oc apply -f openshift-ai/model-hosting/inferenceservice.yaml
+oc apply -f openshift-ai/model-hosting/s3-secret.yaml
+oc apply -f openshift-ai/model-hosting/s3registry-sa.yaml
 ```
 
-4. Watch the pods until the model is ready:
+3. Edit `inference_ocimodel.yaml` or `inference_s3.yaml` for your storage URI, credentials, hardware profile, and resources.
+4. Apply the InferenceService:
+
+```sh
+# OCI / ModelCar
+oc apply -f openshift-ai/model-hosting/inference_ocimodel.yaml
+
+# or S3
+oc apply -f openshift-ai/model-hosting/inference_s3.yaml
+```
+
+5. Watch until the model is ready:
 
 ```sh
 oc get pods -n llm-serving -w
 ```
 
-### Testing the model
+### Test the model
 
-Before configuring LightSpeed on an OCP cluster, lets test to ensure that the model is running properly
+Smoke-test the model before configuring LightSpeed:
 
 ```sh
-# SMOKE TEST the model directly before touching OLS:
 POD=$(oc get pod -n llm-serving -o jsonpath='{.items[0].metadata.name}')
+
 oc exec -n llm-serving "$POD" -c kserve-container -- \
   curl -s http://localhost:8080/v1/models | python3 -m json.tool
-# Should return a model with id "granite-41-3b"
+# Expect a model with id "granite-41-3b"
 
 oc exec -n llm-serving "$POD" -c kserve-container -- \
   curl -s -X POST http://localhost:8080/v1/chat/completions \
@@ -255,45 +293,92 @@ oc exec -n llm-serving "$POD" -c kserve-container -- \
     "messages": [{"role": "user", "content": "What is a Kubernetes Deployment in one sentence?"}],
     "max_tokens": 100
   }' | python3 -m json.tool
-# Should return a coherent answer. If this fails, OLS will too —
-# debug here first.
 ```
 
-### Expose AI Model for external access
+If this fails, fix serving before configuring LightSpeed.
 
+### Expose the model externally
+
+List the predictor service:
+
+```sh
+oc get svc -n llm-serving
 ```
-$oc get svc -n llm-serving`
+
+Example:
+
+```text
 NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
 granite-41-3b-metrics     ClusterIP   172.30.165.244   <none>        8080/TCP   8m19s
 granite-41-3b-predictor   ClusterIP   None             <none>        80/TCP     8m19s
 ```
 
-`oc create route edge --service=granite-41-3b-predictor`
+Create a route (or edit `openshift-ai/model-hosting/route.yaml` and replace the sample host with your cluster domain):
 
+```sh
+oc create route edge --service=granite-41-3b-predictor -n llm-serving
+# or
+oc apply -f openshift-ai/model-hosting/route.yaml
 ```
-oc get route
-NAME                      HOST/PORT                                                   PATH   SERVICES                  PORT   TERMINATION   WILDCARD
-granite-41-3b-predictor   granite-41-3b-predictor-llm-serving.apps.sno.xphyrlab.net          granite-41-3b-predictor   http   edge          None
+
+Confirm the route:
+
+```sh
+oc get route -n llm-serving
 ```
 
-## Installing OpenShift LightSpeed
+Note the `HOST/PORT` value — you will use it as the LightSpeed provider URL.
 
-On the cluster(s) you want to run OpenShift LightSpeed on
+---
 
-To install OpenShift LightSpeed from the UI, follow these steps:
-1. log into OpenShift with cluster administrator privledges
-2. Select "Ecosystem"->"Catalog"
-3. Search for "OpenShift LightSpeed"
-4. Select Install
-5. Select the latest version
-6. Click Install
+## 4. Install OpenShift LightSpeed
 
+Install LightSpeed on each cluster where you want the assistant available.
 
-## Installing OpenShift LightSpeed from CLI
+### From the OpenShift UI
 
+1. Log into OpenShift with cluster-administrator privileges.
+2. Go to **Ecosystem → Catalog**.
+3. Search for **OpenShift LightSpeed**.
+4. Select the latest version and click **Install**.
+
+### From the command line
+
+1. Apply the operator manifests:
+
+```sh
 oc apply -f lightspeed/operator
-oc create -f lightspeed/ols-secret.yaml
-oc create -f lightspeed/olsconfig.yaml
+```
 
-Validate that it is running:
-oc get po -n openshift-lightspeed
+2. Wait for the operator to be ready:
+
+```sh
+oc get pods -n openshift-lightspeed
+```
+
+### Configure LightSpeed to use your model
+
+1. Edit `lightspeed/olsconfig.yaml` and set the provider `url` to your model route, for example:
+
+```text
+https://granite-41-3b-predictor-llm-serving.apps.example.com/v1
+```
+
+Ensure `defaultModel` / model `name` match the served model id (`granite-41-3b`). Align `contextWindowSize` with the runtime `--max-model-len` (15000 in the Hugging Face sample; 35000 in the OCI sample).
+
+2. If your InferenceService requires token authentication, put the token in `lightspeed/ols-secret.yaml` (`apitoken`). If auth is disabled on the model, a placeholder value is fine.
+
+3. Apply the secret and config:
+
+```sh
+oc apply -f lightspeed/ols-secret.yaml
+oc apply -f lightspeed/olsconfig.yaml
+```
+
+4. Confirm LightSpeed is running:
+
+```sh
+oc get pods -n openshift-lightspeed
+```
+
+You can then open the OpenShift console and use LightSpeed against your self-hosted Granite model.

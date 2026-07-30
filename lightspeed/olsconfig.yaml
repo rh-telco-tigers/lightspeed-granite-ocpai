@@ -14,7 +14,7 @@ spec:
           toolBudgetRatio: 0.5
       name: red_hat_openshift_ai
       type: rhoai_vllm
-      url: https://granite-41-3b-predictor-llm-serving.apps.sno.xphyrlab.net/v1
+      url: https://granite-41-3b-predictor-llm-serving.apps.example.com/v1
   ols:
     conversationCache:
       postgres:

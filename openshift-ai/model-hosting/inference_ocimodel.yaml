@@ -43,5 +43,5 @@ spec:
           memory: 16Gi
           nvidia.com/gpu: "1"
       runtime: vllm-cuda-runtime
-      storageUri: oci://registry.xphyrlab.net/markd/granite4.1-3b-llm:v1
+      storageUri: oci://registry.example.com/models/granite:4.1-3b
     timeout: 30
