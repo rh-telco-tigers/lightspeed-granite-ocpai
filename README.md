@@ -125,12 +125,16 @@ This path uses:
 
 | File | Purpose |
 |------|---------|
-| `00_namespace.yml` | Creates the `llm-serving` namespace |
+| `namespace.yml` | Creates the `llm-serving` namespace |
 | `hf-secret.yaml` | Stores your Hugging Face token as `HF_TOKEN` |
 | `servingruntime.yaml` | vLLM NVIDIA GPU ServingRuntime for KServe |
 | `inference_huggingface.yaml` | InferenceService that pulls `hf://ibm-granite/granite-4.1-3b` |
 
 You need a [Hugging Face access token](https://huggingface.co/settings/tokens) with permission to download `ibm-granite/granite-4.1-3b`. The cluster must be able to reach Hugging Face on the network.
+
+#### Update inference instance to use hardware profile
+
+Edit the `servingruntime.yaml` file and update the `opendatahub.io/hardware-profile-name` to match the name of the hardware profile you created earlier.
 
 #### Via the command line (manifests)
 
@@ -138,7 +142,7 @@ You need a [Hugging Face access token](https://huggingface.co/settings/tokens) w
 2. Create the namespace:
 
 ```sh
-oc apply -f openshift-ai/model-hosting/00_namespace.yml
+oc apply -f openshift-ai/model-hosting/namespace.yml
 ```
 
 3. Edit `openshift-ai/model-hosting/hf-secret.yaml` and replace `<your-hf-token>` with your Hugging Face token, then apply it:
@@ -253,6 +257,24 @@ oc exec -n llm-serving "$POD" -c kserve-container -- \
   }' | python3 -m json.tool
 # Should return a coherent answer. If this fails, OLS will too —
 # debug here first.
+```
+
+### Expose AI Model for external access
+
+```
+$oc get svc -n llm-serving`
+NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+granite-41-3b-metrics     ClusterIP   172.30.165.244   <none>        8080/TCP   8m19s
+granite-41-3b-predictor   ClusterIP   None             <none>        80/TCP     8m19s
+```
+
+`oc create route edge --service=granite-41-3b-predictor`
+
+```
+oc get route
+NAME                      HOST/PORT                                                   PATH   SERVICES                  PORT   TERMINATION   WILDCARD
+granite-41-3b-predictor   granite-41-3b-predictor-llm-serving.apps.sno.xphyrlab.net          granite-41-3b-predictor   http   edge          None
+```
 
 ## Installing OpenShift LightSpeed
 

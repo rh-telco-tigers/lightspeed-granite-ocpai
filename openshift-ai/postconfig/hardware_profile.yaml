@@ -1,0 +1,39 @@
+apiVersion: infrastructure.opendatahub.io/v1
+kind: HardwareProfile
+metadata:
+  annotations:
+    internal.config.kubernetes.io/previousKinds: HardwareProfile
+    internal.config.kubernetes.io/previousNames: nvidia-gpu
+    internal.config.kubernetes.io/previousNamespaces: opendatahub
+    opendatahub.io/dashboard-feature-visibility: '[]'
+    opendatahub.io/description: This profile offers 4 CPUs and 16 GiB of memory. You
+      can customize these resources up to 8 CPUs and 64 GiB of memory. Includes NVIDIA gpu Accelerator
+    opendatahub.io/disabled: "false"
+    opendatahub.io/display-name: nvidia-gpu
+    opendatahub.io/managed: "false"  
+  labels:
+    app.kubernetes.io/part-of: hardwareprofile
+    app.opendatahub.io/hardwareprofile: "true"
+  name: nvidia-gpu
+  namespace: redhat-ods-applications
+spec:
+  identifiers:
+    - defaultCount: '4'
+      displayName: CPU
+      identifier: cpu
+      maxCount: '8'
+      minCount: '4'
+      resourceType: CPU
+    - defaultCount: 16Gi
+      displayName: Memory
+      identifier: memory
+      maxCount: 64Gi
+      minCount: 16Gi
+      resourceType: Memory
+    - defaultCount: 1
+      displayName: nvidia
+      identifier: nvidia.com/gpu
+      maxCount: 2
+      minCount: 1
+      resourceType: Accelerator
+

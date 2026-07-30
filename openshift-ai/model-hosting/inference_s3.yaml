@@ -3,28 +3,30 @@ kind: InferenceService
 metadata:
   annotations:
     modelFormat: vLLM
+    opendatahub.io/connection-path: granite413b
+    opendatahub.io/connections: registryxphyrlabnet
     opendatahub.io/hardware-profile-name: nvidia-gpu
     opendatahub.io/hardware-profile-namespace: redhat-ods-applications
+    opendatahub.io/hardware-profile-resource-version: "2778328"
     opendatahub.io/model-type: generative
-    openshift.io/display-name: granite4.1-3b
+    openshift.io/description: ""
+    openshift.io/display-name: granite-41-3b
     security.opendatahub.io/enable-auth: "false"
     serving.kserve.io/deploymentMode: Standard
   labels:
     opendatahub.io/dashboard: "true"
-  name: granite41-3b
+  name: granite-41-3b
   namespace: llm-serving
 spec:
   predictor:
     automountServiceAccountToken: false
     deploymentStrategy:
-      type: Recreate
-    imagePullSecrets:
-    - name: granite41-3b
+      type: RollingUpdate
     maxReplicas: 1
     minReplicas: 1
     model:
       args:
-      - --max-model-len=35000
+      - --max-model-len=15000
       - --max-num-seqs=4
       - --gpu-memory-utilization=0.95
       - --enforce-eager
@@ -42,6 +44,9 @@ spec:
           cpu: "4"
           memory: 16Gi
           nvidia.com/gpu: "1"
-      runtime: granite41
-      storageUri: oci://registry.xphyrlab.net/markd/granite4.1-3b-llm:v1
+      runtime: vllm-cuda-runtime
+      storage:
+        key: s3-secret
+        path: granite413b
+    serviceAccountName: s3registry-sa
     timeout: 30
