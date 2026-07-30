@@ -3,13 +3,7 @@ items:
 - apiVersion: ols.openshift.io/v1alpha1
   kind: OLSConfig
   metadata:
-    creationTimestamp: "2026-07-16T18:27:54Z"
-    finalizers:
-    - ols.openshift.io/finalizer
-    generation: 1
     name: cluster
-    resourceVersion: "2294033"
-    uid: 2b85fe64-f27c-4c43-a4df-2b164cba9f03
   spec:
     llm:
       providers:
@@ -46,27 +40,3 @@ items:
       userDataCollection: {}
     olsDataCollector:
       logLevel: INFO
-  status:
-    conditions:
-    - lastTransitionTime: "2026-07-16T18:28:13Z"
-      message: Ready
-      observedGeneration: 1
-      reason: Available
-      status: "True"
-      type: ConsolePluginReady
-    - lastTransitionTime: "2026-07-29T14:51:05Z"
-      message: Ready
-      observedGeneration: 1
-      reason: Available
-      status: "True"
-      type: CacheReady
-    - lastTransitionTime: "2026-07-29T14:57:21Z"
-      message: Ready
-      observedGeneration: 1
-      reason: Available
-      status: "True"
-      type: ApiReady
-    overallStatus: Ready
-kind: List
-metadata:
-  resourceVersion: ""
