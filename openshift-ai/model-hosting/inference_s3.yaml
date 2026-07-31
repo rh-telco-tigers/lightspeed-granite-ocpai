@@ -14,6 +14,7 @@ metadata:
     security.opendatahub.io/enable-auth: "false" # change this to true and create openshift tokens to enable access controls
     serving.kserve.io/deploymentMode: Standard
   labels:
+    networking.kserve.io/visibility: exposed
     opendatahub.io/dashboard: "true"
   name: granite-41-3b
   namespace: llm-serving

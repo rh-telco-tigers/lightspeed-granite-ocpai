@@ -12,6 +12,9 @@ metadata:
     opendatahub.io/hardware-profile-namespace: redhat-ods-applications
     opendatahub.io/hardware-profile-name: nvidia-gpu
     opendatahub.io/model-type: generative
+  labels:
+    networking.kserve.io/visibility: exposed
+    opendatahub.io/dashboard: "true"
 spec:
   predictor:
     automountServiceAccountToken: false
