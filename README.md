@@ -335,18 +335,51 @@ Note the `HOST/PORT` value — you will use it as the LightSpeed provider URL.
 
 You can enable API Token Authentication for the model by doing the following:
 
-1. edit the inferenceserver instance and change the following setting: `security.opendatahub.io/enable-auth: "true"`
-2. create tokens using the secret template:
+1. edit the `inferenceserver` instance and change the following setting: `security.opendatahub.io/enable-auth: "true"`
+2. Create a service account that will be used to access the model:
+`oc create serviceaccount granite-user -n llm-serving`
+3. Create a new role that will allow access to the inference server:
 ```
-apiVersion: v1
-kind: Secret
+oc apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
 metadata:
-  name: <uniquite name>-granite-41-3b-sa
-  annotations:
-    kubernetes.io/service-account.name: "default"
-type: kubernetes.io/service-account-token
+  name: llm-inference-viewer
+  namespace: llm-serving
+rules:
+- apiGroups: ["serving.kserve.io"]
+  resources: ["llminferenceservices"]
+  verbs: ["get"]
+  resourceNames: ["granite-41-3b"]
+EOF
 ```
-3. extract the generated token from each secret you create and use that to access the API
+4. Bind the role to the newly created service account
+`oc create rolebinding llm-user-binding \
+  --role=llm-inference-viewer \
+  --serviceaccount=llm-serving:granite-user \
+  -n llm-serving`
+5. Create a token
+`TOKEN=$(oc create token granite-user -n llm-serving --duration=1h)`
+6. Test access
+```
+POD=$(oc get pod -n llm-serving -o jsonpath='{.items[0].metadata.name}')
+
+oc exec -n llm-serving "$POD" -c kserve-container -- \
+  curl -s http://localhost:8080/v1/models | python3 -m json.tool
+# Expect a model with id "granite-41-3b"
+
+oc exec -n llm-serving "$POD" -c kserve-container -- \
+  curl -s -X POST http://localhost:8080/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -d '{
+    "model": "granite-41-3b",
+    "messages": [{"role": "user", "content": "What is a Kubernetes Deployment in one sentence?"}],
+    "max_tokens": 100
+  }' | python3 -m json.tool
+```
+
+See [Making authenticated inference request to Distributed Inference with llm-d](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.4/html/deploy_models_using_distributed_inference_with_llm-d/enabling-authentication-and-authorization-for-llm-inference-service_distributed-inference#making-authenticated-inference-requests-to-llmd_distributed-inference) for additional details.
 
 ---
 
