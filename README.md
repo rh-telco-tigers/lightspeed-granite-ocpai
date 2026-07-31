@@ -331,6 +331,23 @@ granite-41-3b-predictor   granite-41-3b-predictor-llm-serving.apps.sno.example.c
 
 Note the `HOST/PORT` value — you will use it as the LightSpeed provider URL.
 
+### Enabling API Token Authentication for the serving model
+
+You can enable API Token Authentication for the model by doing the following:
+
+1. edit the inferenceserver instance and change the following setting: `security.opendatahub.io/enable-auth: "true"`
+2. create tokens using the secret template:
+```
+apiVersion: v1
+kind: Secret
+metadata:
+  name: <uniquite name>-granite-41-3b-sa
+  annotations:
+    kubernetes.io/service-account.name: "default"
+type: kubernetes.io/service-account-token
+```
+3. extract the generated token from each secret you create and use that to access the API
+
 ---
 
 ## 4. Install OpenShift LightSpeed

@@ -7,7 +7,7 @@ metadata:
     opendatahub.io/hardware-profile-namespace: redhat-ods-applications
     opendatahub.io/model-type: generative
     openshift.io/display-name: granite-41-3b
-    security.opendatahub.io/enable-auth: "false"
+    security.opendatahub.io/enable-auth: "false" # change this to true and create openshift tokens to enable access controls
     serving.kserve.io/deploymentMode: Standard
   labels:
     opendatahub.io/dashboard: "true"
