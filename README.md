@@ -391,19 +391,25 @@ You can then open the OpenShift console and use LightSpeed against your self-hos
 
 Start by getting the certificate in question:
 
-```
-echo | openssl s_client -connect example.com:443 2>&1 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > server-cert.pem
+```sh
+echo | openssl s_client -connect granite-41-3b-predictor-llm-serving.apps.example.com:443 2>&1 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > server-cert.pem
 ```
 
 Now create a configMap from the file above:
 
-```
+```sh
 oc create configmap trusted-certs --from-file=server-cert.pem --namespace openshift-lightspeed
 ```
 
 Finally update the OLS configuration to include the configmap 
 
+```sh
+oc patch olsconfig cluster --type='merge' -p '{"spec":{"ols":{"additionalCAConfigMapRef":{"name":"trusted-certs"}}}}'
 ```
+
+Your `OLSConfig` should now contain the following:
+
+```yaml
 apiVersion: ols.openshift.io/v1alpha1
 kind: OLSConfig
 metadata:
