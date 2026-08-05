@@ -299,6 +299,8 @@ If this fails, fix serving before configuring LightSpeed.
 
 ### Expose the model externally
 
+> **NOTE:** This step is only required if you did not configure the inferenceService with `metadata.labels.networking.kserve.io/visibility: exposed`
+
 List the predictor service:
 
 ```sh
@@ -384,3 +386,35 @@ oc get pods -n openshift-lightspeed
 ```
 
 You can then open the OpenShift console and use LightSpeed against your self-hosted Granite model.
+
+#### Configure Lightspeed to trust self-signed certificate
+
+Start by getting the certificate in question:
+
+```
+echo | openssl s_client -connect example.com:443 2>&1 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > server-cert.pem
+```
+
+Now create a configMap from the file above:
+
+```
+oc create configmap trusted-certs --from-file=server-cert.pem --namespace openshift-lightspeed
+```
+
+Finally update the OLS configuration to include the configmap 
+
+```
+apiVersion: ols.openshift.io/v1alpha1
+kind: OLSConfig
+metadata:
+  name: cluster
+spec:
+  ols:
+    additionalCAConfigMapRef:
+      name: trusted-certs
+```
+
+# References
+
+[Lightspeed Documentation](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0)
+[Configuring LightSpeed with Trusted Certs](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0/html/configure/ols-configuring-openshift-lightspeed#ols-support-for-trusted-ca-certificates-and-llm-providers_ols-configuring-openshift-lightspeed)
