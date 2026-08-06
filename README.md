@@ -315,15 +315,7 @@ granite-41-3b-metrics     ClusterIP   172.30.165.244   <none>        8080/TCP   
 granite-41-3b-predictor   ClusterIP   None             <none>        80/TCP     8m19s
 ```
 
-Create a route (or edit `openshift-ai/model-hosting/route.yaml` and replace the sample host with your cluster domain):
-
-```sh
-oc create route edge --service=granite-41-3b-predictor -n llm-serving
-# or
-oc apply -f openshift-ai/model-hosting/route.yaml
-```
-
-Confirm the route:
+OpenShift AI will create a external route as part of the configuration. You can get this route from the UI, or you can get it using the following command:
 
 ```sh
 $ oc get route -n llm-serving
@@ -331,8 +323,7 @@ NAME                      HOST/PORT                                             
 granite-41-3b-predictor   granite-41-3b-predictor-llm-serving.apps.sno.example.com    granite-41-3b-predictor          http   edge          None
 ```
 
-Note the `HOST/PORT` value — you will use it as the LightSpeed provider URL.
-
+If you plan to run Lightspeed on the same cluster that you are hosting the LLM on, you can use the internal service to access the LLM. The internal service will be called `http://granite-41-3b-predictor.llm-serving.svc.cluster.local:8080/v1` assuming you followed the directions in this repo.
 ---
 
 ## 4. Install OpenShift LightSpeed
@@ -362,13 +353,13 @@ oc get pods -n openshift-lightspeed
 
 ### Configure LightSpeed to use your model
 
-1. Edit `lightspeed/olsconfig.yaml` and set the provider `url` to your model route, for example:
+1. Edit `lightspeed/olsconfig.yaml` and set the provider `url` to your model route:
 
-```text
-https://granite-41-3b-predictor-llm-serving.apps.example.com/v1
-```
+ * if you are using an external route: `https://granite-41-3b-predictor-llm-serving.apps.example.com/v1`
+   * see section [Configure Lightspeed to trust self-signed certificate](#configure-lightspeed-to-trust-self-signed-certificate) if you are using a self-signed certificate on your external route
+ * if you are using an internal svc: `http://granite-41-3b-predictor.llm-serving.svc.cluster.local:8080/v1`
 
-Ensure `defaultModel` / model `name` match the served model id (`granite-41-3b`). Align `contextWindowSize` with the runtime `--max-model-len` (15000 in the Hugging Face sample; 35000 in the OCI sample).
+Ensure `defaultModel` / model `name` match the served model id (`granite-41-3b`). 
 
 2. If your InferenceService requires token authentication, put the token in `lightspeed/ols-secret.yaml` (`apitoken`). If auth is disabled on the model, a placeholder value is fine.
 
@@ -388,6 +379,8 @@ oc get pods -n openshift-lightspeed
 You can then open the OpenShift console and use LightSpeed against your self-hosted Granite model.
 
 #### Configure Lightspeed to trust self-signed certificate
+
+If you are leveraging a LLM hosted on another cluster, you will need to access the LLM service over a secure connection. If the system hosting the remote LLM uses a self-signed certificate, follow these steps to configure Lightspeed to trust the certificate.
 
 Start by getting the certificate in question:
 
@@ -424,3 +417,4 @@ spec:
 
 [Lightspeed Documentation](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0)
 [Configuring LightSpeed with Trusted Certs](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0/html/configure/ols-configuring-openshift-lightspeed#ols-support-for-trusted-ca-certificates-and-llm-providers_ols-configuring-openshift-lightspeed)
+[BYO Knoweldge Tools](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0/html/configure/ols-configuring-openshift-lightspeed#about-the-byo-knowledge-tool_ols-configuring-openshift-lightspeed)
