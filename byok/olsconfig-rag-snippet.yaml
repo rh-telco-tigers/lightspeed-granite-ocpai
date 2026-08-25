@@ -1,0 +1,16 @@
+# Add under spec.ols in the cluster OLSConfig resource.
+#
+# Replace the image with the registry path you pushed in the BYOK lab.
+# indexID and indexPath match the defaults produced by lightspeed-rag-tool-rhel9.
+
+rag:
+  - image: default-route-openshift-image-registry.apps.example.com/openshift-lightspeed/byok-image:latest
+    indexID: vector_db_index
+    indexPath: /rag/vector_db
+
+# Optional: use only your custom knowledge (disable built-in OpenShift docs RAG):
+# byokRAGOnly: true
+
+# Optional: pull secrets for private registries (not cluster-wide pull secret):
+# imagePullSecrets:
+#   - name: my-registry-pull-secret

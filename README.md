@@ -387,6 +387,10 @@ oc get pods -n openshift-lightspeed
 
 You can then open the OpenShift console and use LightSpeed against your self-hosted Granite model.
 
+### Optional: Bring Your Own Knowledge (BYOK)
+
+To augment LightSpeed with custom organizational documentation (runbooks, standards, SOPs), continue with the [BYOK lab](byok/README.md) under `byok/`. That lab builds a RAG index from Markdown files and patches `OLSConfig` to use it alongside—or instead of—the built-in OpenShift documentation.
+
 #### Configure Lightspeed to trust self-signed certificate
 
 Start by getting the certificate in question:
@@ -420,7 +424,13 @@ spec:
       name: trusted-certs
 ```
 
-# References
+## References
 
-[Lightspeed Documentation](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0)
-[Configuring LightSpeed with Trusted Certs](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0/html/configure/ols-configuring-openshift-lightspeed#ols-support-for-trusted-ca-certificates-and-llm-providers_ols-configuring-openshift-lightspeed)
+- [Lightspeed Documentation](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0)
+- [Configuring LightSpeed with Trusted Certs](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0/html/configure/ols-configuring-openshift-lightspeed#ols-support-for-trusted-ca-certificates-and-llm-providers_ols-configuring-openshift-lightspeed)
+
+## Acknowledgements
+
+> **AI-assisted authoring**
+>
+> The lab design, topic, concept, and workflow are original to the author. Formatting, layout, and readability improvements were assisted by AI tools (including Grok 4.5).
