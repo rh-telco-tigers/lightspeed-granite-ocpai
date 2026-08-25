@@ -8,13 +8,13 @@ spec:
     - credentialsSecretRef:
         name: granite-creds
       models:
-      - contextWindowSize: 35000
-        name: granite-41-3b
+      - name: granite-41-3b
         parameters:
           toolBudgetRatio: 0.5
       name: red_hat_openshift_ai
       type: rhoai_vllm
-      url: https://granite-41-3b-predictor-llm-serving.apps.example.com/v1
+#      url: https://granite-41-3b-predictor-llm-serving.apps.example.com/v1 # use this as example if connecting externally
+      url: http://granite-41-3b-predictor.llm-serving.svc.cluster.local:8080/v1 # use this if connecting internally in the same cluster
   ols:
     conversationCache:
       postgres:
