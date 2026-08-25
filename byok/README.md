@@ -37,18 +37,6 @@ url: "https://docs.example.com/my-doc"
 
 If front matter is omitted, the first `#` heading becomes the title and the file path becomes the URL.
 
-## Lab overview
-
-```text
-Markdown files  →  RAG tool (podman)  →  byok-image.tar
-                                              ↓
-                                    Push to image registry
-                                              ↓
-                              Patch OLSConfig (spec.ols.rag)
-                                              ↓
-                         LightSpeed answers using your knowledge
-```
-
 ---
 
 ## 1. Configure environment variables
@@ -102,40 +90,7 @@ This reads Markdown from `byok/knowledgebase/` and writes `byok/output/byok-imag
 
 ## 3. Push the image to a registry
 
-Choose one registry target.
-
-### Option A: OpenShift internal registry (recommended for lab clusters)
-
-1. Expose the internal registry and note the route:
-
-```sh
-oc patch configs.imageregistry.operator.openshift.io/cluster --type merge \
-  -p '{"spec":{"defaultRoute":true}}'
-
-oc wait --for=condition=Available deployment/image-registry \
-  -n openshift-image-registry --timeout=120s
-
-export OCP_REGISTRY_URL="$(oc get route default-route -n openshift-image-registry -o jsonpath='{.spec.host}')"
-export BYOK_IMAGE="${OCP_REGISTRY_URL}/${OLS_NAMESPACE}/byok-image:latest"
-echo "Registry: ${OCP_REGISTRY_URL}"
-echo "Image:    ${BYOK_IMAGE}"
-```
-
-2. Log in to the internal registry:
-
-```sh
-podman login -u "$(oc whoami)" -p "$(oc whoami -t)" "${OCP_REGISTRY_URL}" --tls-verify=false
-```
-
 3. Load, tag, and push the image:
-
-```sh
-podman load -i "${OUTPUT_DIR}/byok-image.tar"
-podman tag localhost/byok-image:latest "${BYOK_IMAGE}"
-podman push "${BYOK_IMAGE}"
-```
-
-### Option B: External registry (for example Quay.io)
 
 1. Set the image reference in `byok/env.local`, for example:
 
