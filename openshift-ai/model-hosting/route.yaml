@@ -2,20 +2,20 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   labels:
-    app: isvc.granite-41-3b-predictor
+    app: isvc.granite-42-3b-predictor
     component: predictor
     opendatahub.io/dashboard: "true"
-    serving.kserve.io/inferenceservice: granite-41-3b
-  name: granite-41-3b-predictor
+    serving.kserve.io/inferenceservice: granite-42-3b
+  name: granite-42-3b-predictor
   namespace: llm-serving
 spec:
-  host: granite-41-3b-predictor-llm-serving.apps.example.com
+  host: granite-42-3b-predictor-llm-serving.apps.example.com
   port:
     targetPort: http
   tls:
     termination: edge
   to:
     kind: Service
-    name: granite-41-3b-predictor
+    name: granite-42-3b-predictor
     weight: 100
   wildcardPolicy: None

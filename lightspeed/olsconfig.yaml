@@ -8,20 +8,20 @@ spec:
     - credentialsSecretRef:
         name: granite-creds
       models:
-      - name: granite-41-3b
+      - name: granite-42-3b
         parameters:
           toolBudgetRatio: 0.5
       name: red_hat_openshift_ai
       type: rhoai_vllm
-#      url: https://granite-41-3b-predictor-llm-serving.apps.example.com/v1 # use this as example if connecting externally
-      url: http://granite-41-3b-predictor.llm-serving.svc.cluster.local:8080/v1 # use this if connecting internally in the same cluster
+#      url: https://granite-42-3b-predictor-llm-serving.apps.example.com/v1 # use this as example if connecting externally
+      url: http://granite-42-3b-predictor.llm-serving.svc.cluster.local:8080/v1 # use this if connecting internally in the same cluster
   ols:
     conversationCache:
       postgres:
         maxConnections: 2000
         sharedBuffers: 256MB
       type: postgres
-    defaultModel: granite-41-3b
+    defaultModel: granite-42-3b
     defaultProvider: red_hat_openshift_ai
     deployment:
       api:

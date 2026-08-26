@@ -1,6 +1,6 @@
 # Bring Your Own Knowledge (BYOK) Lab
 
-This lab extends the main tutorial. After you host Granite 4.1-3B and connect OpenShift LightSpeed, you can augment LightSpeed with **institutional knowledge** using the Bring Your Own Knowledge (BYOK) feature.
+This lab extends the main tutorial. After you host Granite 4.2-3B and connect OpenShift LightSpeed, you can augment LightSpeed with **institutional knowledge** using the Bring Your Own Knowledge (BYOK) feature.
 
 BYOK ingests Markdown documentation, builds a vector index, packages it as a container image, and configures LightSpeed to retrieve from that index during chat.
 
@@ -13,8 +13,11 @@ Complete the main lab first:
 - OpenShift LightSpeed installed and running
 - `OLSConfig` configured with your self-hosted Granite model (see `lightspeed/olsconfig.yaml`)
 - `oc` and `podman` on a workstation or RHEL 9 host with network access to your cluster and `registry.redhat.io`
-- You will need the fuse overlay support
-    - `sudo dnf install fuse-overlayfs`
+- FUSE overlay support (for example, `fuse-overlayfs`):
+
+```sh
+sudo dnf install fuse-overlayfs
+```
 
 ## Sample knowledge base
 
@@ -38,6 +41,10 @@ url: "https://docs.example.com/my-doc"
 ```
 
 If front matter is omitted, the first `#` heading becomes the title and the file path becomes the URL.
+
+### Extra credit
+
+OpenShift LightSpeed shows the source of articles it cites based on the `url` field in each Markdown file's front matter. To demo clickable source links, follow the instructions in [`byok/kbserver`](kbserver/README.md) to deploy a simple Markdown web server for the sample knowledge base.
 
 ---
 
@@ -88,18 +95,18 @@ podman run -it --rm --device=/dev/fuse \
 
 This reads Markdown from `byok/knowledgebase/` and writes `byok/output/byok-image.tar`.
 
-### Troubleshooting the RAG builder.
+### Troubleshooting the RAG build
 
-If you get the error `Error: 'overlay' is not supported over overlayfs, a mount_program is required: backing file system is unsupported for this graph driver` you will need to make some changes to your podman setup.
+If you see `Error: 'overlay' is not supported over overlayfs, a mount_program is required: backing file system is unsupported for this graph driver`, update your Podman storage configuration.
 
-Open or edit one of the following files:
+Edit one of the following files:
 
-* For rootless users, edit: ~/.config/containers/storage.conf
-* For system-wide/root users, edit: /etc/containers/storage.conf
+* Rootless users: `~/.config/containers/storage.conf`
+* Root or system-wide: `/etc/containers/storage.conf`
 
-Add the following:
+Add the following for overlay with FUSE:
 
-```
+```ini
 [storage]
 driver = "overlay"
 
@@ -108,21 +115,19 @@ mount_program = "/usr/bin/fuse-overlayfs"
 force_mask = "shared"
 ```
 
-or if using btrfs file system
+Or, if you use a Btrfs file system:
 
-```
+```ini
 [storage]
 driver = "btrfs"
 ```
 
-You will need to restart the podman system with `podman system reset`. This will reset all of your podman storage including and you will need to stop any running pods and re-pull all images after 
+Then reset Podman storage with `podman system reset`. This removes all local images and containers, so stop running pods first and plan to re-pull images afterward.
 
 
 ---
 
 ## 3. Push the image to a registry
-
-3. Load, tag, and push the image:
 
 1. Set the image reference in `byok/env.local`, for example:
 

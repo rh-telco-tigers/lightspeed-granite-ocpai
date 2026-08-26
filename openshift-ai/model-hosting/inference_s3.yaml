@@ -3,20 +3,20 @@ kind: InferenceService
 metadata:
   annotations:
     modelFormat: vLLM
-    opendatahub.io/connection-path: granite413b
+    opendatahub.io/connection-path: granite423b
     opendatahub.io/connections: registryxphyrlabnet
     opendatahub.io/hardware-profile-name: nvidia-gpu
     opendatahub.io/hardware-profile-namespace: redhat-ods-applications
     opendatahub.io/hardware-profile-resource-version: "2778328"
     opendatahub.io/model-type: generative
     openshift.io/description: ""
-    openshift.io/display-name: granite-41-3b
+    openshift.io/display-name: granite-42-3b
     security.opendatahub.io/enable-auth: "false" # change this to true and create openshift tokens to enable access controls
     serving.kserve.io/deploymentMode: Standard
   labels:
     networking.kserve.io/visibility: exposed
     opendatahub.io/dashboard: "true"
-  name: granite-41-3b
+  name: granite-42-3b
   namespace: llm-serving
 spec:
   predictor:
@@ -32,7 +32,7 @@ spec:
       - --gpu-memory-utilization=0.95
       - --enforce-eager
       - --enable-auto-tool-choice
-      - --tool-call-parser=granite4
+      - --tool-call-parser=qwen3_coder
       modelFormat:
         name: vLLM
       name: ""
@@ -48,6 +48,6 @@ spec:
       runtime: vllm-cuda-runtime
       storage:
         key: s3-secret
-        path: granite413b
+        path: granite423b
     serviceAccountName: s3registry-sa
     timeout: 30

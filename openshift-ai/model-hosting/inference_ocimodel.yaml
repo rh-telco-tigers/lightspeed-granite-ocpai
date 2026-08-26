@@ -6,13 +6,13 @@ metadata:
     opendatahub.io/hardware-profile-name: nvidia-gpu
     opendatahub.io/hardware-profile-namespace: redhat-ods-applications
     opendatahub.io/model-type: generative
-    openshift.io/display-name: granite-41-3b
+    openshift.io/display-name: granite-42-3b
     security.opendatahub.io/enable-auth: "false" # change this to true and create openshift tokens to enable access controls
     serving.kserve.io/deploymentMode: Standard
   labels:
     networking.kserve.io/visibility: exposed
     opendatahub.io/dashboard: "true"
-  name: granite-41-3b
+  name: granite-42-3b
   namespace: llm-serving
 spec:
   predictor:
@@ -20,7 +20,7 @@ spec:
     deploymentStrategy:
       type: Recreate
     imagePullSecrets:
-    - name: granite-41-3b
+    - name: granite-42-3b
     maxReplicas: 1
     minReplicas: 1
     model:
@@ -30,7 +30,7 @@ spec:
       - --gpu-memory-utilization=0.95
       - --enforce-eager
       - --enable-auto-tool-choice
-      - --tool-call-parser=granite4
+      - --tool-call-parser=qwen3_coder
       modelFormat:
         name: vLLM
       name: ""
@@ -44,5 +44,5 @@ spec:
           memory: 16Gi
           nvidia.com/gpu: "1"
       runtime: vllm-cuda-runtime
-      storageUri: oci://registry.example.com/models/granite:4.1-3b
+      storageUri: oci://registry.example.com/models/granite:4.2-3b
     timeout: 30

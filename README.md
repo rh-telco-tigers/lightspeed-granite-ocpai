@@ -1,6 +1,6 @@
-# Hosting Granite 4.1-3B for OpenShift LightSpeed
+# Hosting Granite 4.2-3B for OpenShift LightSpeed
 
-This tutorial walks you through deploying OpenShift AI, hosting an IBM Granite 4.1-3B model, and connecting OpenShift LightSpeed to that model.
+This tutorial walks you through deploying OpenShift AI, hosting an IBM Granite 4.2-3B model, and connecting OpenShift LightSpeed to that model.
 
 ## Requirements
 
@@ -72,7 +72,7 @@ oc apply -f openshift-ai/postconfig/hardware_profile.yaml
 
 ## 2. Prepare the model (optional)
 
-You can serve Granite 4.1-3B in three ways:
+You can serve Granite 4.2-3B in three ways:
 
 1. **Pull from Hugging Face at deploy time** (recommended when the cluster can reach Hugging Face) — skip this section and go to [Host the model](#3-host-the-model-with-openshift-ai).
 2. **Build a container image** (ModelCar) — download locally, package, and push to a registry.
@@ -82,8 +82,8 @@ For options 2 and 3, install the [Hugging Face CLI](https://huggingface.co/docs/
 
 ```sh
 hf auth login
-hf download ibm-granite/granite-4.1-3b \
-  --local-dir ./granite-41/model \
+hf download ibm-granite/granite-4.2-3b \
+  --local-dir ./granite-42/model \
   --exclude "*.bin" \
   --exclude "*.gguf" \
   --exclude "original/*"
@@ -95,13 +95,13 @@ If you would like to host the model as a container, follow these steps to build 
 
 ```sh
 export IMAGE_REPO=registry.example.com/models/granite
-export TAG=4.1-3b
+export TAG=4.2-3b
 
 podman build \
   --platform linux/amd64 \
   -t "${IMAGE_REPO}:${TAG}" \
-  -f "./granite-41/Containerfile" \
-  "./granite-41"
+  -f "./granite-42/Containerfile" \
+  "./granite-42"
 
 podman push "${IMAGE_REPO}:${TAG}"
 ```
@@ -115,10 +115,10 @@ export AWS_ACCESS_KEY_ID=<your-access-key>
 export AWS_SECRET_ACCESS_KEY=<your-secret-key>
 export ENDPOINT_URL=https://s3.example.com:9445
 export MODELS_BUCKET=models
-export MODEL_NAME=granite413b
+export MODEL_NAME=granite423b
 
 aws --endpoint-url="${ENDPOINT_URL}" \
-  s3 sync ./granite-41/model/ "s3://${MODELS_BUCKET}/${MODEL_NAME}/"
+  s3 sync ./granite-42/model/ "s3://${MODELS_BUCKET}/${MODEL_NAME}/"
 ```
 
 If you have issues with the S3 uploads, the following additional settings often help:
@@ -132,11 +132,11 @@ aws configure set default.s3.multipart_chunksize 64MB
 
 ## 3. Host the model with OpenShift AI
 
-With OpenShift AI installed, and a the source of our model determined, we can now move onto hosting the model in OpenShift AI.  Three sets of example manifests are available:
+Once OpenShift AI is installed and you have chosen a model source, deploy the model using one of the manifest sets below:
 
-* pull from Huggingface
-* pull from Container Registry
-* pull from S3 bucket
+* Pull from Hugging Face
+* Pull from a container registry
+* Pull from an S3 bucket
 
 Manifests live under `openshift-ai/model-hosting/`. Prefer **Option A (Hugging Face)** when the cluster can reach Hugging Face. Use **Option B** if you prepared a container image or S3 upload above.
 
@@ -147,9 +147,9 @@ Manifests live under `openshift-ai/model-hosting/`. Prefer **Option A (Hugging F
 | `namespace.yml` | Creates the `llm-serving` namespace |
 | `hf-secret.yaml` | Stores your Hugging Face token as `HF_TOKEN` |
 | `servingruntime.yaml` | vLLM NVIDIA GPU ServingRuntime for KServe |
-| `inference_huggingface.yaml` | InferenceService that pulls `hf://ibm-granite/granite-4.1-3b` |
+| `inference_huggingface.yaml` | InferenceService that pulls `hf://ibm-granite/granite-4.2-3b` |
 
-You need a [Hugging Face access token](https://huggingface.co/settings/tokens) with permission to download `ibm-granite/granite-4.1-3b`. The cluster must reach Hugging Face on the network.
+You need a [Hugging Face access token](https://huggingface.co/settings/tokens) with permission to download `ibm-granite/granite-4.2-3b`. The cluster must reach Hugging Face on the network.
 
 #### Update the hardware profile annotation
 
@@ -185,11 +185,11 @@ oc apply -f openshift-ai/model-hosting/inference_huggingface.yaml
 6. Wait until the deployment is ready:
 
 ```sh
-oc get inferenceservice granite-41-3b -n llm-serving
+oc get inferenceservice granite-42-3b -n llm-serving
 oc get pods -n llm-serving -w
 ```
 
-The InferenceService uses `storageUri: hf://ibm-granite/granite-4.1-3b` and injects `HF_TOKEN` from `hf-secret` so vLLM can authenticate to Hugging Face.
+The InferenceService uses `storageUri: hf://ibm-granite/granite-4.2-3b` and injects `HF_TOKEN` from `hf-secret` so vLLM can authenticate to Hugging Face.
 
 #### From the OpenShift AI UI
 
@@ -202,14 +202,14 @@ The InferenceService uses `storageUri: hf://ibm-granite/granite-4.1-3b` and inje
 4. Ensure a vLLM NVIDIA GPU ServingRuntime is available. If not, apply `servingruntime.yaml` from the CLI or import it (**+ → Import YAML**).
 5. Open the **Models** tab and click **Deploy model**.
 6. Fill in the form:
-   - **Model deployment name**: `granite-41-3b`
+   - **Model deployment name**: `granite-42-3b`
    - **Model type**: `Generative AI`
    - **Serving runtime**: `vLLM NVIDIA GPU ServingRuntime for KServe` (or `vllm-cuda-runtime`)
    - **Hardware profile**: match the profile you created (sample requests 1 GPU, 4 CPU, 32Gi–48Gi memory)
    - **Model location**: URI connection with:
 
      ```text
-     hf://ibm-granite/granite-4.1-3b
+     hf://ibm-granite/granite-4.2-3b
      ```
 
 7. Select **Make model deployment available through an external route**.
@@ -223,7 +223,7 @@ The InferenceService uses `storageUri: hf://ibm-granite/granite-4.1-3b` and inje
     - `--gpu-memory-utilization=0.95`
     - `--enforce-eager`
     - `--enable-auto-tool-choice`
-    - `--tool-call-parser=granite4`
+    - `--tool-call-parser=qwen3_coder`
 11. Click **Deploy** and wait until the model is ready. The first pull from Hugging Face can take several minutes.
 
 ### Option B: Deploy from a container image or S3
@@ -243,8 +243,8 @@ Use this path only if you built a ModelCar image or uploaded the model to S3.
 2. Open the **Models** tab and click **Deploy model**.
 3. Select the vLLM NVIDIA GPU ServingRuntime and configure replicas, size, and accelerator.
 4. Set the model location:
-   - **Container / OCI**: URI such as `oci://registry.example.com/models/granite:4.1-3b`
-   - **S3**: connection to your bucket and path prefix (for example `granite413b`)
+   - **Container / OCI**: URI such as `oci://registry.example.com/models/granite:4.2-3b`
+   - **S3**: connection to your bucket and path prefix (for example `granite423b`)
 5. Configure serving arguments and authentication as needed, then click **Deploy**.
 
 #### From the command line
@@ -283,13 +283,13 @@ POD=$(oc get pod -n llm-serving -o jsonpath='{.items[0].metadata.name}')
 
 oc exec -n llm-serving "$POD" -c kserve-container -- \
   curl -s http://localhost:8080/v1/models | python3 -m json.tool
-# Expect a model with id "granite-41-3b"
+# Expect a model with id "granite-42-3b"
 
 oc exec -n llm-serving "$POD" -c kserve-container -- \
   curl -s -X POST http://localhost:8080/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -d '{
-    "model": "granite-41-3b",
+    "model": "granite-42-3b",
     "messages": [{"role": "user", "content": "What is a Kubernetes Deployment in one sentence?"}],
     "max_tokens": 100
   }' | python3 -m json.tool
@@ -299,7 +299,7 @@ If this fails, fix serving before configuring LightSpeed.
 
 ### Expose the model externally
 
-> **NOTE:** This step is only required if you did not configure the inferenceService with `metadata.labels.networking.kserve.io/visibility: exposed`
+> **Note:** This step is only required if you did not configure the InferenceService with `metadata.labels.networking.kserve.io/visibility: exposed`.
 
 List the predictor service:
 
@@ -311,19 +311,31 @@ Example:
 
 ```text
 NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
-granite-41-3b-metrics     ClusterIP   172.30.165.244   <none>        8080/TCP   8m19s
-granite-41-3b-predictor   ClusterIP   None             <none>        80/TCP     8m19s
+granite-42-3b-metrics     ClusterIP   172.30.165.244   <none>        8080/TCP   8m19s
+granite-42-3b-predictor   ClusterIP   None             <none>        80/TCP     8m19s
 ```
 
-OpenShift AI will create a external route as part of the configuration. You can get this route from the UI, or you can get it using the following command:
+OpenShift AI creates an external route as part of the deployment. You can find the route in the UI or with:
 
 ```sh
-$ oc get route -n llm-serving
-NAME                      HOST/PORT                                                   PATH   SERVICES                  PORT   TERMINATION   WILDCARD
-granite-41-3b-predictor   granite-41-3b-predictor-llm-serving.apps.sno.example.com    granite-41-3b-predictor          http   edge          None
+oc get route -n llm-serving
 ```
 
-If you plan to run Lightspeed on the same cluster that you are hosting the LLM on, you can use the internal service to access the LLM. The internal service will be called `http://granite-41-3b-predictor.llm-serving.svc.cluster.local:8080/v1` assuming you followed the directions in this repo.
+Example:
+
+```text
+NAME                      HOST/PORT                                                   PATH   SERVICES                  PORT   TERMINATION   WILDCARD
+granite-42-3b-predictor   granite-42-3b-predictor-llm-serving.apps.sno.example.com          granite-42-3b-predictor   http   edge          None
+```
+
+If you run LightSpeed on the same cluster where you host the LLM, you can use the internal service instead of the external route:
+
+```text
+http://granite-42-3b-predictor.llm-serving.svc.cluster.local:8080/v1
+```
+
+This assumes you used the manifests and naming from this repository.
+
 ---
 
 ## 4. Install OpenShift LightSpeed
@@ -353,13 +365,13 @@ oc get pods -n openshift-lightspeed
 
 ### Configure LightSpeed to use your model
 
-1. Edit `lightspeed/olsconfig.yaml` and set the provider `url` to your model route:
+1. Edit `lightspeed/olsconfig.yaml` and set the provider `url` to your model endpoint:
 
- * if you are using an external route: `https://granite-41-3b-predictor-llm-serving.apps.example.com/v1`
-   * see section [Configure Lightspeed to trust self-signed certificate](#configure-lightspeed-to-trust-self-signed-certificate) if you are using a self-signed certificate on your external route
- * if you are using an internal svc: `http://granite-41-3b-predictor.llm-serving.svc.cluster.local:8080/v1`
+   - **External route:** `https://granite-42-3b-predictor-llm-serving.apps.example.com/v1`
+     - If the route uses a self-signed certificate, see [Configure LightSpeed to trust a self-signed certificate](#configure-lightspeed-to-trust-a-self-signed-certificate).
+   - **Internal service:** `http://granite-42-3b-predictor.llm-serving.svc.cluster.local:8080/v1`
 
-Ensure `defaultModel` / model `name` match the served model id (`granite-41-3b`). 
+   Ensure `defaultModel` and the model `name` match the served model id (`granite-42-3b`).
 
 2. If your InferenceService requires token authentication, put the token in `lightspeed/ols-secret.yaml` (`apitoken`). If auth is disabled on the model, a placeholder value is fine.
 
@@ -382,23 +394,23 @@ You can then open the OpenShift console and use LightSpeed against your self-hos
 
 To augment LightSpeed with custom organizational documentation (runbooks, standards, SOPs), continue with the [BYOK lab](byok/README.md) under `byok/`. That lab builds a RAG index from Markdown files and patches `OLSConfig` to use it alongside—or instead of—the built-in OpenShift documentation.
 
-#### Configure Lightspeed to trust self-signed certificate
+#### Configure LightSpeed to trust a self-signed certificate
 
-If you are leveraging a LLM hosted on another cluster, you will need to access the LLM service over a secure connection. If the system hosting the remote LLM uses a self-signed certificate, follow these steps to configure Lightspeed to trust the certificate.
+If LightSpeed connects to an LLM on another cluster over HTTPS, and that endpoint uses a self-signed certificate, configure LightSpeed to trust it:
 
 Start by getting the certificate in question:
 
 ```sh
-echo | openssl s_client -connect granite-41-3b-predictor-llm-serving.apps.example.com:443 2>&1 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > server-cert.pem
+echo | openssl s_client -connect granite-42-3b-predictor-llm-serving.apps.example.com:443 2>&1 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > server-cert.pem
 ```
 
-Now create a configMap from the file above:
+Create a ConfigMap from the certificate file:
 
 ```sh
 oc create configmap trusted-certs --from-file=server-cert.pem --namespace openshift-lightspeed
 ```
 
-Finally update the OLS configuration to include the configmap 
+Update the OLS configuration to reference the ConfigMap:
 
 ```sh
 oc patch olsconfig cluster --type='merge' -p '{"spec":{"ols":{"additionalCAConfigMapRef":{"name":"trusted-certs"}}}}'
@@ -419,8 +431,8 @@ spec:
 
 ## References
 
-- [Lightspeed Documentation](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0)
-- [Configuring LightSpeed with Trusted Certs](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0/html/configure/ols-configuring-openshift-lightspeed#ols-support-for-trusted-ca-certificates-and-llm-providers_ols-configuring-openshift-lightspeed)
+- [OpenShift LightSpeed documentation](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0)
+- [Configuring LightSpeed with trusted CA certificates](https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0/html/configure/ols-configuring-openshift-lightspeed#ols-support-for-trusted-ca-certificates-and-llm-providers_ols-configuring-openshift-lightspeed)
 
 ## Acknowledgements
 
