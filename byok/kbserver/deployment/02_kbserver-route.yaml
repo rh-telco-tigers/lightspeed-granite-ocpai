@@ -1,0 +1,19 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: kbserver
+  namespace: kbserver
+  labels:
+    app: kbserver
+    app.kubernetes.io/part-of: kbserver
+spec:
+  to:
+    kind: Service
+    name: kbserver
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+    destinationCACertificate: ''
+  port:
+    targetPort: 8080
+  alternateBackends: []

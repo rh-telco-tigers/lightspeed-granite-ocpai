@@ -7,7 +7,7 @@ RUN apk add --no-cache git
 
 WORKDIR /app
 
-RUN git clone https://github.com/aerth/markdownd.git
+RUN git clone https://github.com/xphyr/markdownd.git
 
 WORKDIR /app/markdownd
 
@@ -30,4 +30,4 @@ COPY knowledgebase/ /opt/
 EXPOSE 8080
 
 # markdownd serves the directory given as the final argument
-CMD ["/markdownd", "-index=gen", "/opt"]
+CMD ["/markdownd", "-http=0.0.0.0:8080""-index=gen", "/opt"]

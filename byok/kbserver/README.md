@@ -4,22 +4,25 @@ Simple Markdown HTTP server for the BYOK lab knowledge base. It renders the file
 
 Uses [markdownd](https://github.com/aerth/markdownd).
 
-## Build
+## Build and Push to Registry
 
 Run from the `byok/` directory so the build context includes `knowledgebase/`:
 
 ```sh
 cd byok
-podman build -f kbserver/Containerfile -t kbserver:latest .
+podman build -f kbserver/Containerfile -t registry.example.com/kbserver/kbserver:latest .
+podman push registry.example.com/kbserver/kbserver:latest
 ```
 
-## Run locally
+## Deploy to OpenShift
+
+Before running the following comamnds, be sure to update `spec.template.spec.Containers.image` path to point to your registry.
 
 ```sh
-podman run --rm -p 8080:8080 kbserver:latest
+oc login
+oc apply -f byok/kbserver/deployment
+oc get route -n kbserver
 ```
-
-Open `http://localhost:8080/` for the generated index, or request a file directly (for example `http://localhost:8080/deployment-standards.md`).
 
 ## URL alignment with knowledge base metadata
 
