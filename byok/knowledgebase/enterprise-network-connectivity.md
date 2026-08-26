@@ -1,6 +1,6 @@
 ---
 title: "Granite Lab Industries: Enterprise Network Connectivity and Database Access"
-url: "https://docs.granitelab.example.com/network/enterprise-connectivity.html"
+url: "https://docs.granitelab.example.com/enterprise-network-connectivity.html"
 ---
 
 # Granite Lab Industries: Enterprise Network Connectivity and Database Access

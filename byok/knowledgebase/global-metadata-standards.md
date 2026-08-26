@@ -1,6 +1,6 @@
 ---
 title: "Granite Lab Industries: Global Kubernetes Metadata Standards"
-url: "https://docs.granitelab.example.com/openshift/global-metadata-standards.html"
+url: "https://docs.granitelab.example.com/global-metadata-standards.html"
 ---
 
 # Granite Lab Industries: Global Kubernetes Metadata Standards

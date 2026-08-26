@@ -1,6 +1,6 @@
 ---
 title: "Granite Lab Industries: Container Deployment Standards"
-url: "https://docs.granitelab.example.com/openshift/deployment-standards.html"
+url: "https://docs.granitelab.example.com/deployment-standards.html"
 ---
 
 # Granite Lab Industries: Container Deployment Standards

@@ -1,6 +1,6 @@
 ---
 title: "Granite Lab Industries: ConfigMap and Secret Standards"
-url: "https://docs.granitelab.example.com/openshift/configmap-secret-standards.html"
+url: "https://docs.granitelab.example.com/configmap-secret-standards.html"
 ---
 
 # Granite Lab Industries: ConfigMap and Secret Standards

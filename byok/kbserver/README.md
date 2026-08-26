@@ -26,4 +26,9 @@ oc get route -n kbserver
 
 ## URL alignment with knowledge base metadata
 
-Knowledge articles use URLs such as `https://docs.granitelab.example.com/openshift/deployment-standards.html`. This image serves files from `/opt` at paths like `/deployment-standards.md`. To match the metadata URLs in a lab, point an OpenShift Route or ingress at this service and add path-based routing, or update the `url` fields in the Markdown front matter to match how you expose the service.
+Before generating the BYOK container file, update the files in the `knowledgebase` directory with the route that is created:
+
+```sh
+cd knowledgebase
+sed -i s/docs.granitelab.example.com/kbserver-kbserver.apps.sno.xphyrlab.net/g
+```
