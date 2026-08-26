@@ -1,7 +1,7 @@
 # ==========================================
 # STAGE 1: The Build Environment (The Builder)
 # ==========================================
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 RUN apk add --no-cache git
 
@@ -30,4 +30,4 @@ COPY knowledgebase/ /opt/
 EXPOSE 8080
 
 # markdownd serves the directory given as the final argument
-CMD ["/markdownd", "-http=0.0.0.0:8080""-index=gen", "/opt"]
+CMD ["/markdownd", "-http=0.0.0.0:8080", "-index=gen", "/opt"]
