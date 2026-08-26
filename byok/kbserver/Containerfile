@@ -1,0 +1,33 @@
+# ==========================================
+# STAGE 1: The Build Environment (The Builder)
+# ==========================================
+FROM golang:1.23-alpine AS builder
+
+RUN apk add --no-cache git
+
+WORKDIR /app
+
+RUN git clone https://github.com/aerth/markdownd.git
+
+WORKDIR /app/markdownd
+
+# Static binary for scratch image (no libc dependency)
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o markdownd .
+
+# ==========================================
+# STAGE 2: The Final Shipping Image
+# ==========================================
+#FROM scratch
+FROM registry.access.redhat.com/ubi8/ubi-minimal
+
+# Copy the compiled binary (not the source directory)
+COPY --from=builder /app/markdownd/markdownd /markdownd
+
+# Build context should be byok/ so knowledgebase/ is available:
+#   podman build -f kbserver/Containerfile -t kbserver:latest .
+COPY knowledgebase/ /opt/
+
+EXPOSE 8080
+
+# markdownd serves the directory given as the final argument
+CMD ["/markdownd", "-index=gen", "/opt"]

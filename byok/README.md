@@ -13,6 +13,8 @@ Complete the main lab first:
 - OpenShift LightSpeed installed and running
 - `OLSConfig` configured with your self-hosted Granite model (see `lightspeed/olsconfig.yaml`)
 - `oc` and `podman` on a workstation or RHEL 9 host with network access to your cluster and `registry.redhat.io`
+- You will need the fuse overlay support
+    - `sudo dnf install fuse-overlayfs`
 
 ## Sample knowledge base
 
@@ -85,6 +87,36 @@ podman run -it --rm --device=/dev/fuse \
 ```
 
 This reads Markdown from `byok/knowledgebase/` and writes `byok/output/byok-image.tar`.
+
+### Troubleshooting the RAG builder.
+
+If you get the error `Error: 'overlay' is not supported over overlayfs, a mount_program is required: backing file system is unsupported for this graph driver` you will need to make some changes to your podman setup.
+
+Open or edit one of the following files:
+
+* For rootless users, edit: ~/.config/containers/storage.conf
+* For system-wide/root users, edit: /etc/containers/storage.conf
+
+Add the following:
+
+```
+[storage]
+driver = "overlay"
+
+[storage.options.overlay]
+mount_program = "/usr/bin/fuse-overlayfs"
+force_mask = "shared"
+```
+
+or if using btrfs file system
+
+```
+[storage]
+driver = "btrfs"
+```
+
+You will need to restart the podman system with `podman system reset`. This will reset all of your podman storage including and you will need to stop any running pods and re-pull all images after 
+
 
 ---
 

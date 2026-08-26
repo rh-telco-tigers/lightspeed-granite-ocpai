@@ -1,6 +1,6 @@
 ---
 title: "Granite Lab Industries: Network Policy Standards"
-url: "https://docs.granitelab.example.com/openshift/network-policy-standards"
+url: "https://docs.granitelab.example.com/openshift/network-policy-standards.html"
 ---
 
 # Granite Lab Industries: Network Policy Standards
