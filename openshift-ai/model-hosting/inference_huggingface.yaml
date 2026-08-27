@@ -30,6 +30,7 @@ spec:
         - '--enforce-eager'
         - '--enable-auto-tool-choice'
         - '--tool-call-parser=qwen3_coder'
+        - '--reasoning-parser=nemotron_3'
       modelFormat:
         name: vLLM   # or match your ServingRuntime
       runtime: vllm-cuda-runtime  # name of your ServingRuntime
