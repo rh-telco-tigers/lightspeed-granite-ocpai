@@ -224,7 +224,7 @@ The InferenceService uses `storageUri: hf://ibm-granite/granite-4.2-3b` and inje
     - `--enforce-eager`
     - `--enable-auto-tool-choice`
     - `--tool-call-parser=qwen3_coder`
-    - `--reasoning-parser=nemotron_3`
+    - `--reasoning-parser=nemotron_v3`
 11. Click **Deploy** and wait until the model is ready. The first pull from Hugging Face can take several minutes.
 
 ### Option B: Deploy from a container image or S3
