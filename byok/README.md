@@ -83,6 +83,8 @@ mkdir -p "${OUTPUT_DIR}"
 podman login registry.redhat.io
 ```
 
+> **NOTE:** For additional details on logging into `registry.redhat.io` see the following KB article [Red Hat Container Registry Authentication](https://access.redhat.com/articles/RegistryAuthentication)
+
 2. Run the RAG tool to build the vector index and image archive:
 
 ```sh
